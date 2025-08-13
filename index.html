@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maaltijd Planner</title>
+    <style>
+        :root {
+            --primary: #4CAF50;
+            --success: #8BC34A;
+            --danger: #F44336;
+            --warning: #FFC107;
+            --light: #f8f9fa;
+            --dark: #343a40;
+            --gray: #6c757d;
+        }
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 15px;
+            line-height: 1.5;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+        .card {
+            background: #fff;
+            border-radius: 6px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.08);
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        h1 {
+            color: var(--primary);
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+        h2 {
+            color: var(--primary);
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+            margin: 0 0 15px 0;
+            font-size: 1.3rem;
+        }
+        input, select, button {
+            padding: 6px 10px;
+            margin: 4px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-weight: 500;
+            min-height: 32px;
+        }
+        button:hover { background: #43a047; }
+        button.danger { background: var(--danger); }
+        button.danger:hover { background: #e53935; }
+        button.success { background: var(--success); }
+        button.success:hover { background: #7cb342; }
+        button.warning { background: var(--warning); }
+        button.warning:hover { background: #ffb300; }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #ddd;
+            flex-wrap: wrap;
+        }
+        .tab {
+            padding: 8px 16px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+        .tab.active {
+            border-bottom: 2px solid var(--primary);
+            font-weight: 600;
+            color: var(--primary);
+        }
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .recipes-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .recipes-group {
+            margin-bottom: 20px;
+        }
+        .recipes-group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 8px;
+        }
+        .recipes-group-title {
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 1.1rem;
+        }
+        .recipes-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 12px;
+        }
+        .recipe-card {
+            border: 1px solid #eee;
+            border-radius: 6px;
+            overflow: hidden;
+            transition: all 0.2s;
+            background: #fff;
+            height: 100%; /* Added to make cards equal height */
+        }
+        .recipe-card:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        .recipe-header {
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .recipe-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--dark);
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .recipe-actions {
+            display: flex;
+            gap: 4px;
+        }
+        .recipe-body {
+            padding: 10px;
+            transition: padding 0.3s ease;
+        }
+        /* FIX: Hide recipe body completely when collapsed */
+        .recipe-body.collapsed {
+            padding: 0;
+        }
+        .ingredients-list {
+            list-style: none;
+            padding: 0;
+            margin: 8px 0 0 0;
+        }
+        .ingredient-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 0;
+            font-size: 0.85rem;
+        }
+        .ingredient-name {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .ingredient-qty {
+            color: var(--gray);
+            min-width: 60px;
+            text-align: right;
+            margin-left: 10px;
+        }
+        .ingredient-supermarket {
+            font-size: 0.75rem;
+            color: var(--gray);
+            margin-top: 2px;
+        }
+        .recipe-footer {
+            padding: 8px 10px;
+            background-color: #f8f9fa;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--gray);
+        }
+        /* Meal planning */
+        .meal-plan-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .days-selector {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .meal-plan-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 12px;
+        }
+        .meal-day {
+            border: 1px solid #eee;
+            border-radius: 6px;
+            padding: 10px;
+            background: #fff;
+        }
+        .meal-day-header {
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: var(--dark);
+        }
+        .meal-day-select {
+            width: 100%;
+            margin-bottom: 8px;
+        }
+        .current-meal {
+            padding: 6px;
+            background-color: #f0f7f0;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            margin-top: 5px;
+        }
+        .meal-actions {
+            display: flex;
+            gap: 5px;
+            margin-top: 5px;
+        }
+        /* Shopping list */
+        .shopping-list-group {
+            margin-bottom: 15px;
+        }
+        .supermarket-header {
+            background: #e8f5e9;
+            color: var(--primary);
+            padding: 6px 10px;
+            font-weight: 600;
+            border-radius: 4px;
+            margin: 10px 0 5px 0;
+        }
+        .shopping-list-item {
+            padding: 6px 0;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px dashed #eee;
+            font-size: 0.9rem;
+        }
+        .total-highlight {
+            font-weight: 600;
+            color: var(--primary);
+        }
+        /* Collapsible sections */
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .collapsible-content.expanded {
+            max-height: 1000px;
+            transition: max-height 0.3s ease-in;
+        }
+        .collapsible-trigger {
+            cursor: pointer;
+            color: var(--primary);
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .collapsible-trigger::after {
+            content: '▼';
+            font-size: 0.7rem;
+            transition: transform 0.2s;
+            margin-left: 4px;
+        }
+        .collapsible-trigger.collapsed::after {
+            transform: rotate(-90deg);
+        }
+        /* Global controls */
+        .global-controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        /* Recipe form */
+        .recipe-form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        @media (max-width: 768px) {
+            .recipe-form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .form-section {
+            margin-bottom: 15px;
+        }
+        .form-section h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.1rem;
+            color: var(--dark);
+        }
+        .ingredient-group {
+            position: relative;
+            padding: 8px 8px 8px 32px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            margin-bottom: 6px;
+            border-left: 3px solid var(--primary);
+        }
+        .remove-ingredient {
+            position: absolute;
+            left: 6px;
+            top: 44%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            background: var(--danger);
+            color: white;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+            font-weight: bold;
+        }
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        /* Animation */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        /* Empty states */
+        .empty-state {
+            text-align: center;
+            padding: 20px;
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+        /* Category filter */
+        .category-filter {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .category-filter-btn {
+            background: #e9ecef;
+            color: var(--dark);
+            padding: 4px 10px;
+            font-size: 0.8rem;
+        }
+        .category-filter-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Maaltijd Planner</h1>
+    <!-- TABS -->
+    <div class="tabs">
+        <div class="tab active" data-tab="recipes">Recepten</div>
+        <div class="tab" data-tab="plan">Maaltijden Plannen</div>
+        <div class="tab" data-tab="shopping">Boodschappenlijst</div>
+    </div>
+    <!-- RECIPES TAB -->
+    <div id="recipes-tab" class="tab-content active">
+        <div class="card">
+            <div class="recipe-form-grid">
+                <div class="form-section">
+                    <h3 id="form-title">Nieuw Recept Toevoegen</h3>
+                    <form id="recipe-form">
+                        <input type="hidden" id="recipe-id">
+                        <div>
+                            <label>Receptnaam *</label>
+                            <input type="text" id="recipe-name" placeholder="Bijv. Pasta Carbonara" required>
+                        </div>
+                        <div>
+                            <label>Categorie *</label>
+                            <input type="text" id="recipe-category" placeholder="Bijv. Pasta" required>
+                        </div>
+                        <div id="ingredients-container">
+                            <div class="ingredient-group">
+                                <button type="button" class="remove-ingredient">×</button>
+                                <input type="text" class="ingredient-name" placeholder="Ingrediënt" required>
+                                <input type="text" class="ingredient-qty" placeholder="Hoeveelheid" required>
+                                <select class="supermarket-select">
+                                    <option value="Lidl">Lidl</option>
+                                    <option value="Boni">Boni</option>
+                                    <option value="Plus">Plus</option>
+                                    <option value="Aldi">Aldi</option>
+                                    <option value="Other">Overig</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="button" id="add-ingredient">+ Ingrediënt Toevoegen</button>
+                        <div class="form-actions">
+                            <button type="submit" id="save-recipe-btn">Recept Opslaan</button>
+                            <button type="button" id="cancel-edit-btn" class="danger hidden">Annuleren</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="form-section">
+                    <h3>Tip</h3>
+                    <p>Gebruik het recept formulier om nieuwe recepten toe te voegen of bestaande recepten aan te passen.</p>
+                    <p>Vul de ingrediënten in met hoeveelheden zoals "200g", "2 eetlepels" of "1 blik".</p>
+                    <p>Gebruik de categorieën om recepten te groeperen en makkelijk te vinden.</p>
+                </div>
+            </div>
+        </div>
+        <!-- Removed categories sidebar and main-content wrapper -->
+        <div class="card">
+            <div class="recipes-controls">
+                <div class="category-filter" id="category-filter">
+                    <!-- Category filters will be populated here -->
+                </div>
+                <!-- ADDED: Button to show/hide all ingredients -->
+                <button id="toggle-all-ingredients" class="warning">Ingrediënten tonen</button>
+            </div>
+            <div id="recipes-container">
+                <!-- Recipes will be populated here -->
+            </div>
+        </div>
+    </div>
+    <!-- MEAL PLAN TAB -->
+    <div id="plan-tab" class="tab-content">
+        <div class="card">
+            <div class="meal-plan-controls">
+                <div class="days-selector">
+                    <label>Te plannen dagen:</label>
+                    <input type="number" id="days-to-plan" min="1" max="14" value="7">
+                </div>
+                <button id="generate-plan" class="success">Plan Genereren</button>
+                <button id="clear-plan" class="danger">Plan Wissen</button>
+            </div>
+            <div class="meal-plan-grid" id="meal-plan-container">
+                <!-- Meal plan days will be populated here -->
+            </div>
+        </div>
+    </div>
+    <!-- SHOPPING LIST TAB -->
+    <div id="shopping-tab" class="tab-content">
+        <div class="card">
+            <div class="meal-plan-controls">
+                <button id="generate-shopping-list" class="success">Boodschappenlijst Genereren</button>
+            </div>
+            <div id="shopping-list-output">
+                <!-- Shopping list will be populated here -->
+            </div>
+        </div>
+    </div>
+    <script>
+        // Globale variabelen
+        let editingRecipeId = null;
+        let allRecipes = [];
+        let allCategories = [];
+        let activeCategoryFilter = 'all';
+        let allIngredientsVisible = false;
+        // DOM Elements
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const recipesContainer = document.getElementById('recipes-container');
+        const categoriesList = document.getElementById('categories-list');
+        const categoryFilter = document.getElementById('category-filter');
+        const mealPlanContainer = document.getElementById('meal-plan-container');
+        const shoppingListOutput = document.getElementById('shopping-list-output');
+        const recipeForm = document.getElementById('recipe-form');
+        const formTitle = document.getElementById('form-title');
+        const recipeIdInput = document.getElementById('recipe-id');
+        const cancelEditBtn = document.getElementById('cancel-edit-btn');
+        const toggleAllIngredientsBtn = document.getElementById('toggle-all-ingredients');
+        // ========== INITIALISATIE ==========
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize the form to set up event listeners for remove buttons
+            resetForm();
+            // Laad data
+            loadRecipes();
+            loadMealPlan();
+            // Stel event listeners in
+            setupEventListeners();
+        });
+        // ========== EVENT LISTENERS ==========
+        function setupEventListeners() {
+            // Tab wisseling
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tabContents.forEach(c => c.classList.remove('active'));
+                    tab.classList.add('active');
+                    document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
+                    if (tab.dataset.tab === 'shopping') {
+                        loadShoppingList();
+                    }
+                });
+            });
+            // Recept formulier
+            document.getElementById('add-ingredient').addEventListener('click', addIngredientField);
+            recipeForm.addEventListener('submit', saveRecipe);
+            cancelEditBtn.addEventListener('click', resetForm);
+            // Toggle alle ingrediënten
+            if (toggleAllIngredientsBtn) {
+                toggleAllIngredientsBtn.addEventListener('click', toggleAllIngredients);
+            }
+            // Maaltijden plannen
+            document.getElementById('generate-plan').addEventListener('click', generatePlan);
+            document.getElementById('clear-plan').addEventListener('click', clearPlan);
+            document.getElementById('generate-shopping-list').addEventListener('click', loadShoppingList);
+        }
+        // ========== RECEPTEN BEHEER ==========
+        function loadRecipes() {
+            fetch('/recipes')
+                .then(res => res.json())
+                .then(recipes => {
+                    allRecipes = recipes;
+                    allCategories = [...new Set(recipes.map(r => r.category).filter(Boolean))];
+                    // Sorteer categorieën op naam
+                    allCategories.sort();
+                    // Update UI
+                    renderCategories();
+                    renderRecipes();
+                });
+        }
+        function renderCategories() {
+            // Render categorie filters boven recepten
+            let filterHTML = `<button class="category-filter-btn ${activeCategoryFilter === 'all' ? 'active' : ''}" data-filter="all">Alle Categorieën</button>`;
+            allCategories.forEach(category => {
+                filterHTML += `<button class="category-filter-btn ${activeCategoryFilter === category ? 'active' : ''}" data-filter="${category}">${category}</button>`;
+            });
+            categoryFilter.innerHTML = filterHTML;
+            // Voeg event listeners toe aan filters
+            document.querySelectorAll('.category-filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    activeCategoryFilter = btn.dataset.filter;
+                    document.querySelectorAll('.category-filter-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    renderRecipes();
+                });
+            });
+        }
+        function renderRecipes() {
+            // Filter recepten op geselecteerde categorie
+            let filteredRecipes = allRecipes;
+            if (activeCategoryFilter !== 'all') {
+                filteredRecipes = allRecipes.filter(r => r.category === activeCategoryFilter);
+            }
+            // Groepeer recepten per categorie
+            const recipesByCategory = {};
+            filteredRecipes.forEach(recipe => {
+                const category = recipe.category || 'Overig';
+                if (!recipesByCategory[category]) {
+                    recipesByCategory[category] = [];
+                }
+                recipesByCategory[category].push(recipe);
+            });
+            // Sorteer categorieën
+            const sortedCategories = Object.keys(recipesByCategory).sort((a, b) => {
+                if (a === 'Overig') return 1;
+                if (b === 'Overig') return -1;
+                return a.localeCompare(b);
+            });
+            // Render recepten
+            let recipesHTML = '';
+            let hasRecipes = false;
+            sortedCategories.forEach(category => {
+                const recipes = recipesByCategory[category];
+                if (recipes.length === 0) return;
+                hasRecipes = true;
+                recipesHTML += `
+                    <div class="recipes-group">
+                        <div class="recipes-group-header">
+                            <h3 class="recipes-group-title">${category}</h3>
+                        </div>
+                        <div class="recipes-list">
+                `;
+                recipes.forEach(recipe => {
+                    recipesHTML += renderRecipeCard(recipe);
+                });
+                recipesHTML += `
+                        </div>
+                    </div>
+                `;
+            });
+            if (!hasRecipes) {
+                recipesHTML = `
+                    <div class="empty-state">
+                        <p>Geen recepten gevonden in deze categorie.</p>
+                        <p>Voeg een nieuw recept toe met de formulier bovenaan.</p>
+                    </div>
+                `;
+            }
+            recipesContainer.innerHTML = recipesHTML;
+            // Reset alle ingrediënten naar de juiste staat
+            updateAllIngredientsVisibility();
+            // Voeg event listeners toe aan recept kaarten
+            document.querySelectorAll('.collapsible-trigger').forEach(trigger => {
+                trigger.addEventListener('click', function() {
+                    const content = this.closest('.recipe-card').querySelector('.collapsible-content');
+                    const recipeBody = this.closest('.recipe-card').querySelector('.recipe-body');
+                    content.classList.toggle('expanded');
+                    this.classList.toggle('collapsed');
+                    // Toggle collapsed class on recipe body
+                    recipeBody.classList.toggle('collapsed', !content.classList.contains('expanded'));
+                });
+            });
+            // Voeg event listeners toe aan bewerk/verwijder knoppen
+            document.querySelectorAll('.edit-recipe').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    editRecipe(parseInt(btn.dataset.id));
+                });
+            });
+            document.querySelectorAll('.delete-recipe').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteRecipe(parseInt(btn.dataset.id));
+                });
+            });
+        }
+        function renderRecipeCard(recipe) {
+            // Render ingrediënten
+            let ingredientsHTML = '';
+            recipe.ingredients.forEach(ing => {
+                ingredientsHTML += `
+                    <li class="ingredient-item">
+                        <span class="ingredient-name" title="${ing.name}">${ing.name}</span>
+                        <span class="ingredient-qty">${ing.quantity}</span>
+                        <!--<div class="ingredient-supermarket">${ing.supermarket}</div>-->
+                    </li>
+                `;
+            });
+            return `
+                <div class="recipe-card">
+                    <div class="recipe-header">
+                        <h3 class="recipe-title" title="${recipe.name}">${recipe.name}</h3>
+                        <div class="recipe-actions">
+                            <button class="warning edit-recipe" data-id="${recipe.id}" title="Bewerken">✎</button>
+                            <button class="danger delete-recipe" data-id="${recipe.id}" title="Verwijderen">🗑️</button>
+                        </div>
+                    </div>
+                    <div class="recipe-body ${allIngredientsVisible ? '' : 'collapsed'}">
+                        <div class="collapsible-content ${allIngredientsVisible ? 'expanded' : ''}">
+                            <ul class="ingredients-list">
+                                ${ingredientsHTML}
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="recipe-footer">
+                        <span><!--${recipe.category || 'Geen categorie'}--></span>
+                        <span class="collapsible-trigger ${allIngredientsVisible ? '' : 'collapsed'}">Ingrediënten</span>
+                    </div>
+                </div>
+            `;
+        }
+        function toggleAllIngredients() {
+            allIngredientsVisible = !allIngredientsVisible;
+            updateAllIngredientsVisibility();
+        }
+        function updateAllIngredientsVisibility() {
+            if (!toggleAllIngredientsBtn) return;
+            // Update alle ingrediënten weergave
+            document.querySelectorAll('.collapsible-content').forEach(content => {
+                content.classList.toggle('expanded', allIngredientsVisible);
+            });
+            // Update recipe body visibility
+            document.querySelectorAll('.recipe-body').forEach(body => {
+                body.classList.toggle('collapsed', !allIngredientsVisible);
+            });
+            document.querySelectorAll('.collapsible-trigger').forEach(trigger => {
+                trigger.classList.toggle('collapsed', !allIngredientsVisible);
+            });
+            // Update knop tekst
+            toggleAllIngredientsBtn.textContent = allIngredientsVisible ?
+                'Ingrediënten verbergen' : 'Ingrediënten tonen';
+        }
+        function addIngredientField() {
+            const container = document.getElementById('ingredients-container');
+            const newGroup = document.createElement('div');
+            newGroup.className = 'ingredient-group';
+            newGroup.innerHTML = `
+                <button type="button" class="remove-ingredient">×</button>
+                <input type="text" class="ingredient-name" placeholder="Ingrediënt" required>
+                <input type="text" class="ingredient-qty" placeholder="Hoeveelheid" required>
+                <select class="supermarket-select">
+                    <option value="Lidl">Lidl</option>
+                    <option value="Boni">Boni</option>
+                    <option value="Plus">Plus</option>
+                    <option value="Aldi">Aldi</option>
+                    <option value="Other">Overig</option>
+                </select>
+            `;
+            container.appendChild(newGroup);
+            // Voeg event listener toe aan verwijderknop
+            newGroup.querySelector('.remove-ingredient').addEventListener('click', (e) => {
+                e.preventDefault();
+                container.removeChild(newGroup);
+            });
+        }
+        function resetForm() {
+            recipeForm.reset();
+            document.getElementById('ingredients-container').innerHTML = `
+                <div class="ingredient-group">
+                    <button type="button" class="remove-ingredient">×</button>
+                    <input type="text" class="ingredient-name" placeholder="Ingrediënt" required>
+                    <input type="text" class="ingredient-qty" placeholder="Hoeveelheid" required>
+                    <select class="supermarket-select">
+                        <option value="Lidl">Lidl</option>
+                        <option value="Boni">Boni</option>
+                        <option value="Plus">Plus</option>
+                        <option value="Aldi">Aldi</option>
+                        <option value="Other">Overig</option>
+                    </select>
+                </div>
+            `;
+            editingRecipeId = null;
+            formTitle.textContent = 'Nieuw Recept Toevoegen';
+            cancelEditBtn.classList.add('hidden');
+            // Reset event listeners voor verwijderknoppen
+            document.querySelectorAll('.remove-ingredient').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const group = btn.closest('.ingredient-group');
+                    group.parentElement.removeChild(group);
+                });
+            });
+        }
+        function editRecipe(id) {
+            fetch(`/recipes/${id}`)
+                .then(res => res.json())
+                .then(recipe => {
+                    // Vul formulier
+                    recipeIdInput.value = recipe.id;
+                    document.getElementById('recipe-name').value = recipe.name;
+                    document.getElementById('recipe-category').value = recipe.category;
+                    // Verwijder bestaande ingrediënten
+                    const container = document.getElementById('ingredients-container');
+                    container.innerHTML = '';
+                    // Voeg ingrediënten toe
+                    recipe.ingredients.forEach(ing => {
+                        const group = document.createElement('div');
+                        group.className = 'ingredient-group';
+                        group.innerHTML = `
+                            <button type="button" class="remove-ingredient">×</button>
+                            <input type="text" class="ingredient-name" value="${ing.name}" required>
+                            <input type="text" class="ingredient-qty" value="${ing.quantity}" required>
+                            <select class="supermarket-select">
+                                <option value="Lidl" ${ing.supermarket === 'Lidl' ? 'selected' : ''}>Lidl</option>
+                                <option value="Boni" ${ing.supermarket === 'Boni' ? 'selected' : ''}>Boni</option>
+                                <option value="Plus" ${ing.supermarket === 'Plus' ? 'selected' : ''}>Plus</option>
+                                <option value="Aldi" ${ing.supermarket === 'Aldi' ? 'selected' : ''}>Aldi</option>
+                                <option value="Other" ${ing.supermarket === 'Other' ? 'selected' : ''}>Overig</option>
+                            </select>
+                        `;
+                        container.appendChild(group);
+                    });
+                    // Update UI
+                    editingRecipeId = id;
+                    formTitle.textContent = `Bewerken: ${recipe.name}`;
+                    cancelEditBtn.classList.remove('hidden');
+                    // Reset event listeners voor verwijderknoppen
+                    document.querySelectorAll('.remove-ingredient').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            const group = btn.closest('.ingredient-group');
+                            group.parentElement.removeChild(group);
+                        });
+                    });
+                    // Scroll naar formulier
+                    document.querySelector('.recipe-form-grid').scrollIntoView({ behavior: 'smooth' });
+                });
+        }
+        function saveRecipe(e) {
+            e.preventDefault();
+            // Verzamel ingrediënten
+            const ingredients = [];
+            document.querySelectorAll('.ingredient-group').forEach(group => {
+                const name = group.querySelector('.ingredient-name').value;
+                if (name) {
+                    ingredients.push({
+                        name,
+                        quantity: group.querySelector('.ingredient-qty').value,
+                        supermarket: group.querySelector('.supermarket-select').value
+                    });
+                }
+            });
+            // Valideer formulier
+            const recipe = {
+                id: editingRecipeId,
+                name: document.getElementById('recipe-name').value,
+                category: document.getElementById('recipe-category').value,
+                ingredients
+            };
+            // Verstuur naar server
+            const method = editingRecipeId ? 'PUT' : 'POST';
+            const url = editingRecipeId ? `/recipes/${editingRecipeId}` : '/recipes';
+            fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(recipe)
+            })
+            .then(res => {
+                if (!res.ok) throw new Error('Opslaan mislukt');
+                resetForm();
+                loadRecipes();
+            })
+            .catch(err => {
+                console.error('Fout bij opslaan:', err);
+                alert('Fout bij opslaan. Controleer de console voor details.');
+            });
+        }
+        function deleteRecipe(id) {
+            if (confirm('Weet je zeker dat je dit recept wilt verwijderen?')) {
+                fetch(`/recipes/${id}`, { method: 'DELETE' })
+                    .then(() => {
+                        loadRecipes();
+                        loadMealPlan();
+                    });
+            }
+        }
+        // ========== MAALTIJDEN PLANNEN ==========
+        function loadMealPlan() {
+            fetch('/meal_plan')
+                .then(res => res.json())
+                .then(renderMealPlan);
+        }
+        function renderMealPlan(plan) {
+            const daysCount = parseInt(document.getElementById('days-to-plan').value) || 7;
+            let daysHTML = '';
+            for (let i = 0; i < daysCount; i++) {
+                const date = new Date();
+                date.setDate(date.getDate() + i);
+                const formattedDate = date.toLocaleDateString('nl-NL', {
+                    weekday: 'short',
+                    day: 'numeric',
+                    month: 'short'
+                });
+                const meal = plan.find(p => new Date(p.date).toDateString() === date.toDateString());
+                // Haal recepten op voor dropdown
+                let optionsHTML = '<option value="">-- Kies recept --</option>';
+                allRecipes.forEach(recipe => {
+                    const selected = meal && meal.recipe_id === recipe.id ? 'selected' : '';
+                    optionsHTML += `<option value="${recipe.id}" ${selected}>${recipe.name}</option>`;
+                });
+                daysHTML += `
+                    <div class="meal-day">
+                        <div class="meal-day-header">${formattedDate}</div>
+                        <select class="meal-day-select" data-date="${date.toISOString().split('T')[0]}">
+                            ${optionsHTML}
+                        </select>
+                        ${meal ? `
+                            <div class="current-meal">
+                                ${meal.recipe_name}
+                                <button class="danger" style="padding: 2px 5px; font-size: 0.7rem; float: right;"
+                                        onclick="removeFromPlan('${meal.date}')">✕</button>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            mealPlanContainer.innerHTML = daysHTML;
+            // Voeg event listener toe aan alle dropdowns
+            document.querySelectorAll('.meal-day-select').forEach(select => {
+                select.addEventListener('change', function() {
+                    const date = this.dataset.date;
+                    const recipeId = this.value;
+                    if (recipeId) {
+                        assignRecipeToDay(date, recipeId);
+                    }
+                });
+            });
+        }
+        function generatePlan() {
+            const days = document.getElementById('days-to-plan').value;
+            fetch(`/generate_plan?days=${days}`, { method: 'POST' })
+                .then(loadMealPlan)
+                .then(loadShoppingList);
+        }
+        function clearPlan() {
+            if (confirm('Weet je zeker dat je het hele maaltijdenplan wilt wissen?')) {
+                fetch('/clear_plan', { method: 'POST' })
+                    .then(loadMealPlan)
+                    .then(loadShoppingList);
+            }
+        }
+        function assignRecipeToDay(date, recipeId) {
+            fetch('/assign_recipe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ date, recipe_id: recipeId })
+            })
+            .then(loadMealPlan)
+            .then(loadShoppingList);
+        }
+        function removeFromPlan(date) {
+            fetch(`/meal_plan/${date}`, { method: 'DELETE' })
+                .then(loadMealPlan)
+                .then(loadShoppingList);
+        }
+        // ========== BOODSCHAPPENLIJST ==========
+        function loadShoppingList() {
+            fetch('/shopping_list')
+                .then(res => res.json())
+                .then(renderShoppingList);
+        }
+        function renderShoppingList(data) {
+            if (!data.groups || data.groups.length === 0) {
+                shoppingListOutput.innerHTML = `
+                    <div class="empty-state">
+                        <p>Geen boodschappen nodig!</p>
+                        <p>Plan eerst maaltijden om een boodschappenlijst te genereren.</p>
+                    </div>
+                `;
+                return;
+            }
+            let html = '';
+            data.groups.forEach(group => {
+                html += `<div class="supermarket-header">${group.supermarket}</div>`;
+                group.items.forEach(item => {
+                    html += `
+                        <div class="shopping-list-item">
+                            <span>${item.ingredient}</span>
+                            <span>${item.display_quantity}</span>
+                        </div>
+                    `;
+                });
+            });
+            shoppingListOutput.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
