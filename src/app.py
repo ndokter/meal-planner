@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 import re
 
 app = Flask(__name__)
-DB = 'meal_planner.db'
+DB = 'data/meal_planner.db'
 
 # Initialiseer database
 def init_db():

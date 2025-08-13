@@ -1,0 +1,9 @@
+services:
+  app:
+    build: .
+    container_name: mealplanner-app
+    ports:
+      - "8001:5000"
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
