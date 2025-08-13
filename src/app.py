@@ -34,6 +34,9 @@ def init_db():
                     FOREIGN KEY(recipe_id) REFERENCES recipes(id))''')
         conn.commit()
 
+# Initialize the database when the app starts
+init_db()
+
 # Hulpfunctie om hoeveelheden te parsen
 def parse_quantity(qty_str):
     """
