@@ -1,5 +1,7 @@
 Vibe coded app to do meal planning for personal use
 
-![Alt text](/screenshot.png?raw=true "beginscherm")
-![Alt text](/screenshot2.png?raw=true "planner")
-![Alt text](/screenshot3.png?raw=true "boodschappenlijst")
+![Beginscherm](screenshot.png "Beginscherm")
+
+![Planner](screenshot2.png "Planner")
+
+![Boodschappenlijst](screenshot3.png "Boodschappenlijst")
