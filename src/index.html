@@ -655,19 +655,27 @@
                     
                     if (this.dataset.target === 'description') {
                         // Handle description toggle
-                        const descriptionContent = this.closest('.recipe-card').querySelector('.description-section .collapsible-content');
-                        descriptionContent.classList.toggle('expanded');
-                        this.classList.toggle('collapsed');
+                        const descriptionContent = recipeCard.querySelector('.description-section .collapsible-content');
+                        if (descriptionContent) {
+                            descriptionContent.classList.toggle('expanded');
+                            this.classList.toggle('collapsed');
+                        }
                     } else {
                         // Handle ingredients toggle
                         const ingredientsContent = recipeCard.querySelector('.ingredients-list').closest('.collapsible-content');
-                        ingredientsContent.classList.toggle('expanded');
-                        this.classList.toggle('collapsed');
+                        if (ingredientsContent) {
+                            ingredientsContent.classList.toggle('expanded');
+                            this.classList.toggle('collapsed');
+                        }
                     }
                     
                     // Update recipe body collapsed state based on both description and ingredients
-                    const descriptionExpanded = recipeCard.querySelector('.description-section .collapsible-content')?.classList.contains('expanded') || false;
-                    const ingredientsExpanded = recipeCard.querySelector('.ingredients-list .collapsible-content')?.classList.contains('expanded') || false;
+                    const descriptionSection = recipeCard.querySelector('.description-section');
+                    const descriptionContent = recipeCard.querySelector('.description-section .collapsible-content');
+                    const descriptionExpanded = descriptionSection && descriptionContent?.classList.contains('expanded') || false;
+                    const ingredientsContent = recipeCard.querySelector('.ingredients-list').closest('.collapsible-content');
+                    const ingredientsExpanded = ingredientsContent?.classList.contains('expanded') || false;
+                    
                     recipeBody.classList.toggle('collapsed', !descriptionExpanded && !ingredientsExpanded);
                 });
             });
