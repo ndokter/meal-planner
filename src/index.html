@@ -384,6 +384,27 @@
             background: var(--primary);
             color: white;
         }
+        #recipe-description {
+            display: block;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        .recipe-description {
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+        .recipe-description h4 {
+            margin: 0 0 5px 0;
+            color: var(--dark);
+            font-size: 1rem;
+        }
+        .recipe-description p {
+            margin: 0;
+            white-space: pre-wrap;
+        }
     </style>
 </head>
 <body>
@@ -409,6 +430,10 @@
                         <div>
                             <label>Categorie *</label>
                             <input type="text" id="recipe-category" placeholder="Bijv. Pasta" required>
+                        </div>
+                        <div>
+                            <label>Beschrijving (optioneel)</label>
+                            <textarea id="recipe-description" placeholder="Bijv. kookinstructies, tips, etc." rows="3"></textarea>
                         </div>
                         <div id="ingredients-container">
                             <div class="ingredient-group">
@@ -625,12 +650,25 @@
             // Voeg event listeners toe aan recept kaarten
             document.querySelectorAll('.collapsible-trigger').forEach(trigger => {
                 trigger.addEventListener('click', function() {
-                    const content = this.closest('.recipe-card').querySelector('.collapsible-content');
-                    const recipeBody = this.closest('.recipe-card').querySelector('.recipe-body');
-                    content.classList.toggle('expanded');
-                    this.classList.toggle('collapsed');
-                    // Toggle collapsed class on recipe body
-                    recipeBody.classList.toggle('collapsed', !content.classList.contains('expanded'));
+                    const recipeCard = this.closest('.recipe-card');
+                    const recipeBody = recipeCard.querySelector('.recipe-body');
+                    
+                    if (this.dataset.target === 'description') {
+                        // Handle description toggle
+                        const descriptionContent = this.closest('.recipe-card').querySelector('.description-section .collapsible-content');
+                        descriptionContent.classList.toggle('expanded');
+                        this.classList.toggle('collapsed');
+                    } else {
+                        // Handle ingredients toggle
+                        const ingredientsContent = recipeCard.querySelector('.ingredients-list').closest('.collapsible-content');
+                        ingredientsContent.classList.toggle('expanded');
+                        this.classList.toggle('collapsed');
+                    }
+                    
+                    // Update recipe body collapsed state based on both description and ingredients
+                    const descriptionExpanded = recipeCard.querySelector('.description-section .collapsible-content')?.classList.contains('expanded') || false;
+                    const ingredientsExpanded = recipeCard.querySelector('.ingredients-list .collapsible-content')?.classList.contains('expanded') || false;
+                    recipeBody.classList.toggle('collapsed', !descriptionExpanded && !ingredientsExpanded);
                 });
             });
             // Voeg event listeners toe aan bewerk/verwijder knoppen
@@ -659,6 +697,20 @@
                     </li>
                 `;
             });
+            
+            // Add description section if it exists
+            let descriptionHTML = '';
+            if (recipe.description) {
+                descriptionHTML = `
+                    <div class="description-section">
+                        <div class="recipe-description">
+                            <h4>Beschrijving:</h4>
+                            <p>${recipe.description.replace(/\n/g, '<br>')}</p>
+                        </div>
+                    </div>
+                `;
+            }
+            
             return `
                 <div class="recipe-card">
                     <div class="recipe-header">
@@ -669,14 +721,26 @@
                         </div>
                     </div>
                     <div class="recipe-body ${allIngredientsVisible ? '' : 'collapsed'}">
-                        <div class="collapsible-content ${allIngredientsVisible ? 'expanded' : ''}">
-                            <ul class="ingredients-list">
-                                ${ingredientsHTML}
-                            </ul>
+                        ${descriptionHTML ? `
+                        <div class="description-section">
+                            <div class="collapsible-content">
+                                <div class="recipe-description">
+                                    <h4>Beschrijving:</h4>
+                                    <p>${recipe.description.replace(/\n/g, '<br>')}</p>
+                                </div>
+                            </div>
+                        </div>` : ''}
+                        <div class="ingredients-section">
+                            <div class="collapsible-content ${allIngredientsVisible ? 'expanded' : ''}">
+                                <ul class="ingredients-list">
+                                    ${ingredientsHTML}
+                                </ul>
+                            </div>
                         </div>
                     </div>
                     <div class="recipe-footer">
                         <span><!--${recipe.category || 'Geen categorie'}--></span>
+                        ${descriptionHTML ? '<span class="collapsible-trigger collapsed" data-target="description">Beschrijving</span>' : ''}
                         <span class="collapsible-trigger ${allIngredientsVisible ? '' : 'collapsed'}">Ingrediënten</span>
                     </div>
                 </div>
@@ -688,8 +752,8 @@
         }
         function updateAllIngredientsVisibility() {
             if (!toggleAllIngredientsBtn) return;
-            // Update alle ingrediënten weergave
-            document.querySelectorAll('.collapsible-content').forEach(content => {
+            // Update only ingredients content
+            document.querySelectorAll('.ingredients-section .collapsible-content').forEach(content => {
                 content.classList.toggle('expanded', allIngredientsVisible);
             });
             // Update recipe body visibility
@@ -742,6 +806,7 @@
                     </select>
                 </div>
             `;
+            document.getElementById('recipe-description').value = '';
             editingRecipeId = null;
             formTitle.textContent = 'Nieuw Recept Toevoegen';
             cancelEditBtn.classList.add('hidden');
@@ -762,6 +827,7 @@
                     recipeIdInput.value = recipe.id;
                     document.getElementById('recipe-name').value = recipe.name;
                     document.getElementById('recipe-category').value = recipe.category;
+                    document.getElementById('recipe-description').value = recipe.description || '';
                     // Verwijder bestaande ingrediënten
                     const container = document.getElementById('ingredients-container');
                     container.innerHTML = '';
@@ -818,6 +884,7 @@
                 id: editingRecipeId,
                 name: document.getElementById('recipe-name').value,
                 category: document.getElementById('recipe-category').value,
+                description: document.getElementById('recipe-description').value,
                 ingredients
             };
             // Verstuur naar server

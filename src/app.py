@@ -6,17 +6,27 @@ from datetime import datetime, timedelta
 import re
 
 app = Flask(__name__)
-DB = 'data/meal_planner.db'
+DB = '/app/data/meal_planner.db'
 
 # Initialiseer database
 def init_db():
+    # Try to create directory if it doesn't exist
+    os.makedirs(os.path.dirname(DB), exist_ok=True)
     with sqlite3.connect(DB) as conn:
         c = conn.cursor()
         # Recepten tabel
+        # Create table if it doesn't exist
         c.execute('''CREATE TABLE IF NOT EXISTS recipes (
                     id INTEGER PRIMARY KEY,
                     name TEXT NOT NULL,
-                    category TEXT)''')
+                    category TEXT,
+                    description TEXT)''')
+        
+        # Check if description column exists, if not add it
+        c.execute("PRAGMA table_info(recipes)")
+        columns = [column[1] for column in c.fetchall()]
+        if 'description' not in columns:
+            c.execute("ALTER TABLE recipes ADD COLUMN description TEXT")
         
         # Ingrediënten tabel (gekoppeld aan recepten)
         c.execute('''CREATE TABLE IF NOT EXISTS ingredients (
@@ -79,7 +89,7 @@ def get_recipes():
     with sqlite3.connect(DB) as conn:
         c = conn.cursor()
         c.execute('SELECT * FROM recipes')
-        recipes = [{'id': r[0], 'name': r[1], 'category': r[2], 'ingredients': []} for r in c.fetchall()]
+        recipes = [{'id': r[0], 'name': r[1], 'category': r[2], 'description': r[3], 'ingredients': []} for r in c.fetchall()]
         
         for recipe in recipes:
             c.execute('SELECT * FROM ingredients WHERE recipe_id = ?', (recipe['id'],))
@@ -108,6 +118,7 @@ def get_recipe(id):
             'id': recipe[0],
             'name': recipe[1],
             'category': recipe[2],
+            'description': recipe[3],
             'ingredients': ingredients
         })
 
@@ -116,8 +127,8 @@ def add_recipe():
     data = request.json
     with sqlite3.connect(DB) as conn:
         c = conn.cursor()
-        c.execute('INSERT INTO recipes (name, category) VALUES (?, ?)', 
-                 (data['name'], data['category']))
+        c.execute('INSERT INTO recipes (name, category, description) VALUES (?, ?, ?)',
+                 (data['name'], data['category'], data.get('description', '')))
         recipe_id = c.lastrowid
         
         for ing in data['ingredients']:
@@ -135,8 +146,8 @@ def update_recipe(id):
         c = conn.cursor()
         
         # Update recept
-        c.execute('UPDATE recipes SET name = ?, category = ? WHERE id = ?', 
-                 (data['name'], data['category'], id))
+        c.execute('UPDATE recipes SET name = ?, category = ?, description = ? WHERE id = ?',
+                 (data['name'], data['category'], data.get('description', ''), id))
         
         # Verwijder bestaande ingrediënten
         c.execute('DELETE FROM ingredients WHERE recipe_id = ?', (id,))

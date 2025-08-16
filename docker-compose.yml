@@ -5,5 +5,5 @@ services:
     ports:
       - "8001:5000"
     volumes:
-      - ./data:/app/data
+      - .:/app/
     restart: unless-stopped
